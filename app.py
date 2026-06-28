@@ -30,21 +30,24 @@ w_scale = st.sidebar.slider("Scalability Footprint Weight (%)", 0, 100, 15) / 10
 st.subheader("📝 Opportunity Pipeline Workspace")
 st.caption("💡 To **Add a row**, scroll to the bottom of the table and click the empty row. To **Delete**, click the row index and hit Delete on your keyboard.")
 
-# Baseline layout - completely focused on core variables (Strategic Status removed here)
+# Baseline layout - now includes editable Status/Strategy column
 initial_data = [
-    {"Opportunity": "A. Smart Visual Inspection", "TRL": 6, "Est_Cost_SGD": 450000, "Benefit_Type": "Quality/Scrap Reduction", "Benefit_Quantity": 5.0, "Time_Months": 9, "Main_Risk": "Process integration", "Scale_Up_Sites": 4},
-    {"Opportunity": "B. Robotics Automation", "TRL": 4, "Est_Cost_SGD": 700000, "Benefit_Type": "FTE Savings", "Benefit_Quantity": 2.0, "Time_Months": 12, "Main_Risk": "High process variability", "Scale_Up_Sites": 6},
-    {"Opportunity": "C. AI Production Scheduling", "TRL": 5, "Est_Cost_SGD": 300000, "Benefit_Type": "Schedule Improvement", "Benefit_Quantity": 5.0, "Time_Months": 6, "Main_Risk": "Data quality & IT adoption", "Scale_Up_Sites": 3},
-    {"Opportunity": "D. Autonomous Transport", "TRL": 7, "Est_Cost_SGD": 550000, "Benefit_Type": "FTE Savings", "Benefit_Quantity": 1.0, "Time_Months": 8, "Main_Risk": "EHS layout constraints", "Scale_Up_Sites": 5},
-    {"Opportunity": "E. AR/VR Training", "TRL": 6, "Est_Cost_SGD": 150000, "Benefit_Type": "Ergonomic/Safety/Other", "Benefit_Quantity": 1.0, "Time_Months": 4, "Main_Risk": "OT Hardware validation", "Scale_Up_Sites": 8},
-    {"Opportunity": "F. Real-Time Quality Sensor", "TRL": 3, "Est_Cost_SGD": 250000, "Benefit_Type": "Quality/Scrap Reduction", "Benefit_Quantity": 10.0, "Time_Months": 18, "Main_Risk": "Low technology maturity", "Scale_Up_Sites": 4},
+    {"Opportunity": "A. Smart Visual Inspection", "Status/Strategy": "co-develop with ARTC", "TRL": 6, "Est_Cost_SGD": 450000, "Benefit_Type": "Quality/Scrap Reduction", "Benefit_Quantity": 5.0, "Time_Months": 9, "Main_Risk": "Process integration", "Scale_Up_Sites": 4},
+    {"Opportunity": "B. Robotics Automation", "Status/Strategy": "progress", "TRL": 4, "Est_Cost_SGD": 700000, "Benefit_Type": "FTE Savings", "Benefit_Quantity": 2.0, "Time_Months": 12, "Main_Risk": "High process variability", "Scale_Up_Sites": 6},
+    {"Opportunity": "C. AI Production Scheduling", "Status/Strategy": "buy", "TRL": 5, "Est_Cost_SGD": 300000, "Benefit_Type": "Schedule Improvement", "Benefit_Quantity": 5.0, "Time_Months": 6, "Main_Risk": "Data quality & IT adoption", "Scale_Up_Sites": 3},
+    {"Opportunity": "D. Autonomous Transport", "Status/Strategy": "exploratory study", "TRL": 7, "Est_Cost_SGD": 550000, "Benefit_Type": "FTE Savings", "Benefit_Quantity": 1.0, "Time_Months": 8, "Main_Risk": "EHS layout constraints", "Scale_Up_Sites": 5},
+    {"Opportunity": "E. AR/VR Training", "Status/Strategy": "pause", "TRL": 6, "Est_Cost_SGD": 150000, "Benefit_Type": "Ergonomic/Safety/Other", "Benefit_Quantity": 1.0, "Time_Months": 4, "Main_Risk": "OT Hardware validation", "Scale_Up_Sites": 8},
+    {"Opportunity": "F. Real-Time Quality Sensor", "Status/Strategy": "co-develop with ARTC", "TRL": 3, "Est_Cost_SGD": 250000, "Benefit_Type": "Quality/Scrap Reduction", "Benefit_Quantity": 10.0, "Time_Months": 18, "Main_Risk": "Low technology maturity", "Scale_Up_Sites": 4},
 ]
 base_df = pd.DataFrame(initial_data)
+
+strategy_options = ["buy", "co-develop with ARTC", "progress", "exploratory study", "pause"]
 
 edited_df = st.data_editor(
     base_df,
     column_config={
         "Opportunity": st.column_config.TextColumn("1) Opportunity"),
+        "Status/Strategy": st.column_config.SelectboxColumn("Overwrite Strategy Directive", options=strategy_options, default="exploratory study"),
         "TRL": st.column_config.NumberColumn("2) TRL", min_value=1, max_value=9, step=1, default=5),
         "Est_Cost_SGD": st.column_config.NumberColumn("3) Est Cost (SGD)", min_value=0, default=100000),
         "Benefit_Type": st.column_config.SelectboxColumn("4) Benefit Category", options=["FTE Savings", "Quality/Scrap Reduction", "Schedule Improvement", "Ergonomic/Safety/Other"], default="FTE Savings"),
@@ -120,24 +123,69 @@ if not edited_df.empty and edited_df["Opportunity"].dropna().any():
 
     final_ranked_df = edited_df.sort_values(by="Final_Priority_Score", ascending=False).reset_index(drop=True)
 
-    # 🚀 BACKEND MAPPING: Automatically assign the Strategic Status based on Opportunity Name
-    status_mapping = {
-        "A. Smart Visual Inspection": "co-develop with ARTC",
-        "B. Robotics Automation": "progress",
-        "C. AI Production Scheduling": "buy",
-        "D. Autonomous Transport": "exploratory study",
-        "E. AR/VR Training": "pause",
-        "F. Real-Time Quality Sensor": "co-develop with ARTC"
-    }
-    # Match strings smoothly; new custom added rows default to "exploratory study"
-    final_ranked_df["Status/Strategy"] = final_ranked_df["Opportunity"].map(status_mapping).fillna("exploratory study")
+    # 🚀 THE AGILE RATIONALE ENGINE: Generates text contextually based on live workspace states
+    def generate_agile_rationale(row):
+        opportunity = row["Opportunity"]
+        strategy = row["Status/Strategy"]
+        status = row["Status"]
+        roi = row["Dynamic_ROI_Ratio"]
+        risk = row["Main_Risk"]
+        trl = row["TRL"]
+        sites = row["Scale_Up_Sites"]
+        
+        # Scenario A: Failed absolute financial benchmark
+        if status == "❌ Below Financial Floor":
+            return (
+                f"Defunded at primary screening. The total portfolio benefit fails to cover the estimated costs "
+                f"(ROI Ratio of {roi:.2f}x). To qualify, this initiative requires cost-restructuring, "
+                f"higher yield targets, or an alternative ecosystem framework to share capital risk."
+            )
+        
+        # Scenario B: Evaluated on the active configuration choice
+        if strategy == "buy":
+            return (
+                f"Top-tier choice. Delivers a verified financial return footprint across the network with an ROI "
+                f"ratio of {roi:.2f}x. Highly compressed implementation timeline warrants an off-the-shelf procurement approach "
+                f"('Buy') to capture rapid Horizon 1 value adjustments without long software engineering backlogs."
+            )
+            
+        elif strategy == "co-develop with ARTC":
+            return (
+                f"High long-term asset value potential, but currently constrained by lower-maturity parameters (TRL {trl:g}) "
+                f"and operational concerns regarding '{risk}'. Co-developing with ARTC permits shared access to public-private advanced laboratories, "
+                f"external prototyping grants, and balanced deployment engineering risk structures."
+            )
+            
+        elif strategy == "progress":
+            return (
+                f"Strong active qualification with an ROI ratio of {roi:.2f}x. Because the core hurdle involves managing "
+                f"'{risk}', execution strategy remains fully internal ('Progress') to shield sensitive workflows, "
+                f"protect manufacturing workspace IP, and control customized technical integration."
+            )
+            
+        elif strategy == "exploratory study":
+            return (
+                f"Technology framework is mature (TRL {trl:g}), but deployment maps show outstanding operational constraints: "
+                f"'{risk}'. A front-end structural site audit and targeted exploratory research study are recommended to resolve "
+                f"integration parameters prior to heavy resource provisioning."
+            )
+            
+        elif strategy == "pause":
+            return (
+                f"Yields marginal programmatic value over cost requirements ({roi:.2f}x ROI), but introduces compounding implementation overhead "
+                f"across {sites} scaling target sites alongside critical bottlenecks linked to '{risk}'. Strategic 'Pause' active to preserve "
+                f"available engineer hours for higher-priority portfolio deployments."
+            )
+            
+        return "Operational data validated. Awaiting strategic categorization matrix adjustments."
 
-    # String representations for output readability
+    # Generate calculations and strings based on active rows
+    final_ranked_df["Strategic Rationale & Technical Logic"] = final_ranked_df.apply(generate_agile_rationale, axis=1)
     final_ranked_df["Total Portfolio Benefit"] = final_ranked_df["Total_Portfolio_Benefit_SGD"].map("SGD ${:,.2f}".format)
     final_ranked_df["Est Cost"] = final_ranked_df["Est_Cost_SGD"].map("SGD ${:,.2f}".format)
 
     # --------------------------------------------------------------------
-    # 📺 CLEAN PRESENTATION LAYER
+    # 📺 CLEAN PRESENTATION LAYER (OUTPUT MATRICES)
     # --------------------------------------------------------------------
     st.markdown("---")
     st.subheader("📊 Prioritized Investment Pipeline Output")
@@ -147,79 +195,32 @@ if not edited_df.empty and edited_df["Opportunity"].dropna().any():
     else:
         st.warning("⚠️ **Strategic Alert:** No initiatives currently meet the absolute minimum financial ROI floor of 1.0.")
 
+    # 1. Primary Priority Table
     st.dataframe(
         final_ranked_df[[
-            "Opportunity", 
-            "Status/Strategy",  # 📍 Beautifully displays here automatically!
-            "Status", 
-            "Final_Priority_Score", 
-            "Total Portfolio Benefit", 
-            "Est Cost", 
-            "TRL", 
-            "Time_Months", 
-            "Scale_Up_Sites", 
-            "Main_Risk"
+            "Opportunity", "Status/Strategy", "Status", "Final_Priority_Score", 
+            "Total Portfolio Benefit", "Est Cost", "TRL", "Time_Months", "Scale_Up_Sites", "Main_Risk"
         ]],
-        use_container_width=True,
-        hide_index=True
+        use_container_width=True, hide_index=True
+    )
+
+    # 2. Dynamic Rationale Table
+    st.write("")
+    st.subheader("📋 Executive Decision Rationale & Logic Matrix")
+    st.markdown("This governance layer dynamically reflects changes in risk, TRL, or financial ratios made in the workspace above.")
+    
+    st.dataframe(
+        final_ranked_df[[
+            "Opportunity", "Status/Strategy", "Status", "Main_Risk", "Strategic Rationale & Technical Logic"
+        ]],
+        column_config={
+            "Opportunity": st.column_config.TextColumn("Initiative"),
+            "Status/Strategy": st.column_config.TextColumn("Status / Strategy"),
+            "Status": st.column_config.TextColumn("Financial Status"),
+            "Main_Risk": st.column_config.TextColumn("Primary Bottleneck Risk"),
+            "Strategic Rationale & Technical Logic": st.column_config.TextColumn("Strategic Rationale (Dynamic Engine)")
+        },
+        use_container_width=True, hide_index=True
     )
 else:
     st.info("💡 Add a project row in the workspace table above to generate the prioritized ranking pipeline.")
-
-import streamlit as st
-import pandas as pd
-
-# 1. Define the actual logic mapping based on the real data in image_238ae0.jpg
-def get_strategic_rationale(row):
-    if row['Opportunity'] == 'C. AI Production Scheduling':
-        return "Highest priority score (3.22). Exceptionally high ROI ratio (6x benefit to cost) with a short 6-month deployment timeline. Fast-track vendor acquisition ('Buy') to secure rapid Horizon 1 returns."
-    elif row['Opportunity'] == 'E. AR/VR Training':
-        return "Marginal financial return (SGD 200k benefit vs. SGD 150k cost) combined with a high-complexity footprint (8 scale-up sites). 'Pause' recommended until OT Hardware validation risks are fully mitigated."
-    elif row['Opportunity'] == 'B. Robotics Automation':
-        return "Solid portfolio benefit (SGD 960k) and highly qualified. High process variability dictates internal execution control ('Progress') to carefully manage the 12-month timeline."
-    elif row['Opportunity'] == 'F. Real-Time Quality Sensor':
-        return "Low Technology Readiness Level (TRL 3) and low maturity risk make internal development unviable. 'Co-develop with ARTC' leverages external R&D ecosystems to offset foundational technical risk."
-    elif row['Opportunity'] == 'A. Smart Visual Inspection':
-        return "Rejected at financial screening—estimated costs (SGD 450k) exceed total portfolio benefits (SGD 300k). If pursued, it must be shifted entirely to an ARTC co-development framework to restructure costs."
-    elif row['Opportunity'] == 'D. Autonomous Transport':
-        return "Fails financial floor criteria due to high deployment costs (SGD 550k) relative to return. Classified as a long-term 'Exploratory Study' to monitor EHS layout constraints before capital allocation."
-    return "Under Review."
-
-# 2. Replicating the exact dataset from image_238ae0.jpg
-pipeline_data = {
-    "Opportunity": [
-        "C. AI Production Scheduling", 
-        "E. AR/VR Training", 
-        "B. Robotics Automation", 
-        "F. Real-Time Quality Sensor", 
-        "A. Smart Visual Inspection", 
-        "D. Autonomous Transport"
-    ],
-    "Strategy": ["buy", "pause", "progress", "co-develop with ARTC", "co-develop with ARTC", "exploratory study"],
-    "Status": ["Qualified", "Qualified", "Qualified", "Qualified", "Below Financial Floor", "Below Financial Floor"],
-    "Main Risk": ["Data quality & IT adoption", "OT Hardware validation", "High process variability", "Low technology maturity", "Process integration", "EHS layout constraints"]
-}
-
-df_rationale = pd.DataFrame(pipeline_data)
-
-# Apply the authentic strategic rationale function
-df_rationale['Strategic Rationale & Technical Logic'] = df_rationale.apply(get_strategic_rationale, axis=1)
-
-# 3. Streamlit UI Rendering directly below your main pipeline output
-st.write("---")
-st.subheader("📋 Executive Decision Rationale & Logic Matrix")
-st.markdown("This governance layer unpacks the specific threshold constraints, risk profiles, and strategic horizons used to determine each project's pipeline status.")
-
-# Displaying a clean corporate data frame
-st.dataframe(
-    df_rationale, 
-    column_config={
-        "Opportunity": st.column_config.TextColumn("Initiative"),
-        "Strategy": st.column_config.TextColumn("Status / Strategy"),
-        "Status": st.column_config.TextColumn("Financial Status"),
-        "Main Risk": st.column_config.TextColumn("Primary Bottleneck Risk"),
-        "Strategic Rationale & Technical Logic": st.column_config.TextColumn("Strategic Rationale (Why?)")
-    },
-    hide_index=True,
-    use_container_width=True
-)
